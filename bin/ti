@@ -33,6 +33,7 @@ from __future__ import unicode_literals
 import json, yaml
 from datetime import datetime, timedelta
 from collections import defaultdict
+from collections import OrderedDict as OD
 import re
 import os, subprocess, tempfile
 from os import path
@@ -49,10 +50,10 @@ class JsonStore(object):
 
         if path.exists(self.filename):
             with open(self.filename) as f:
-                data = json.load(f)
+                data = json.load(f, object_pairs_hook=OD)
 
         else:
-            data = {'work': [], 'interrupt_stack': []}
+            data = OD([('work', list()), ('interrupt_stack', list())])
 
         return data
 
@@ -95,10 +96,7 @@ def action_on(name, time):
                 '. Stop it or use a different sheet.', file=sys.stderr)
         raise SystemExit(1)
 
-    entry = {
-        'name': name,
-        'start': time,
-    }
+    entry = OD([('name', name), ('start', time)])
 
     work.append(entry)
     store.dump(data)
