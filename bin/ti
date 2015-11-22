@@ -31,7 +31,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import json, yaml
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from collections import defaultdict
 from collections import OrderedDict as OD
 import re
@@ -197,13 +197,27 @@ def action_log(period):
     log = defaultdict(lambda: {'delta': timedelta()})
     current = None
 
+    if period == "today":
+        print("Today's log")
+        today = date.today()
+        cutoff = datetime(today.year, today.month, today.day)
+    else:
+        cutoff = None
     for item in work:
         start_time = parse_isotime(item['start'])
         if 'end' in item:
-            log[item['name']]['delta'] += parse_isotime(item['end']) - start_time
-        else:
-            log[item['name']]['delta'] += datetime.utcnow() - start_time
+            end_time = parse_isotime(item['end'])
+        else: # The item currently being worked on
+            end_time = datetime.utcnow()
             current = item['name']
+
+        if cutoff is not None:
+            if end_time < cutoff:
+                continue
+            else:
+                start_time = max(cutoff, start_time)
+
+        log[item['name']]['delta'] += end_time - start_time
 
     name_col_len = 0
 
