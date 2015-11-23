@@ -38,8 +38,17 @@ import re
 import os, subprocess, tempfile
 from os import path
 import sys
+import math
 
 from colorama import *
+
+_now_local = datetime.now()
+_now_utc = datetime.utcnow()
+_delta = _now_local - _now_utc
+_delta_hours = math.ceil(_delta.seconds/100)*100//3600
+_delta_hours += _delta.days*24
+LOCAL_UTC_HOURS_DIFF = _delta_hours
+LOCAL_UTC_DELTA = timedelta(hours=LOCAL_UTC_HOURS_DIFF)
 
 class JsonStore(object):
 
@@ -200,9 +209,11 @@ def action_log(period):
     if period == "today":
         print("Today's log")
         today = date.today()
-        cutoff = datetime(today.year, today.month, today.day)
+        start_cutoff = datetime(today.year, today.month, today.day) - LOCAL_UTC_DELTA
+        end_cutoff = datetime(today.year, today.month, today.day+1) - LOCAL_UTC_DELTA
     else:
-        cutoff = None
+        start_cutoff = None
+        end_cutoff = None
     for item in work:
         start_time = parse_isotime(item['start'])
         if 'end' in item:
@@ -211,11 +222,14 @@ def action_log(period):
             end_time = datetime.utcnow()
             current = item['name']
 
-        if cutoff is not None:
-            if end_time < cutoff:
+        if start_cutoff is not None:
+            if end_time < start_cutoff:
                 continue
             else:
-                start_time = max(cutoff, start_time)
+                start_time = max(start_cutoff, start_time)
+
+        if end_cutoff is not None:
+            end_time = min(end_cutoff, end_time)
 
         log[item['name']]['delta'] += end_time - start_time
 
