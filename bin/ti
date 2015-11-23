@@ -211,6 +211,11 @@ def action_log(period):
         today = date.today()
         start_cutoff = datetime(today.year, today.month, today.day) - LOCAL_UTC_DELTA
         end_cutoff = datetime(today.year, today.month, today.day+1) - LOCAL_UTC_DELTA
+    elif period == "yesterday":
+        print("Yesterday's log")
+        today = date.today()
+        start_cutoff = datetime(today.year, today.month, today.day-1) - LOCAL_UTC_DELTA
+        end_cutoff = datetime(today.year, today.month, today.day) - LOCAL_UTC_DELTA
     else:
         start_cutoff = None
         end_cutoff = None
