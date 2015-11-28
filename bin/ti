@@ -227,11 +227,13 @@ def action_log(period):
             end_time = datetime.utcnow()
             current = item['name']
 
+        if end_time < start_cutoff:
+            continue
+        if start_time > end_cutoff:
+            continue
+
         if start_cutoff is not None:
-            if end_time < start_cutoff:
-                continue
-            else:
-                start_time = max(start_cutoff, start_time)
+            start_time = max(start_cutoff, start_time)
 
         if end_cutoff is not None:
             end_time = min(end_cutoff, end_time)
