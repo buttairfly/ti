@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
-from ti import main
+from ti_systray import main
 
 if __name__ == '__main__':
     use_color = True
