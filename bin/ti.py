@@ -43,7 +43,7 @@ import math
 from colorama import *
 
 use_color = True
-use_gui_notification = True
+use_gui_notification = False
 
 class JsonStore(object):
 
@@ -261,12 +261,12 @@ def action_log(period):
     log = defaultdict(lambda: {'delta': timedelta()})
     current = None
 
-    if period == "today":
+    if period == "today" || period == "t":
         # print_ti("Today's log")
         today = date.today()
         start_cutoff = datetime(today.year, today.month, today.day) - LOCAL_UTC_DELTA
         end_cutoff = datetime(today.year, today.month, today.day) + timedelta(days=1) - LOCAL_UTC_DELTA
-    elif period == "yesterday":
+    elif period == "yesterday" || period == "y":
         # print_ti("Yesterday's log")
         today = date.today()
         start_cutoff = datetime(today.year, today.month, today.day) - timedelta(days=1) - LOCAL_UTC_DELTA
@@ -465,8 +465,8 @@ def parse_args(argv=sys.argv):
         args = {}
 
     elif head in ['o', 'on']:
-        # if not tail:
-        #     helpful_exit('Need the name of whatever you are working on.')
+    	if not tail:
+       	    helpful_exit('Need the name of whatever you are working on.')
 
         fn = action_on
         args = {
