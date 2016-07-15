@@ -44,6 +44,9 @@ from colorama import *
 
 use_color = True
 use_gui_notification = False
+hour_space = 5
+minute_space = 2
+second_space = 2
 
 class JsonStore(object):
 
@@ -204,7 +207,7 @@ def action_interrupt(name, time):
     interrupt_stack.append(interrupted)
     store.dump(data)
 
-    action_on('interrupt: ' + green(name), time)
+    action_on(name + '<i>', time)
     print_ti('You are now %d deep in interrupts.' % len(interrupt_stack))
 
 
@@ -261,12 +264,12 @@ def action_log(period):
     log = defaultdict(lambda: {'delta': timedelta()})
     current = None
 
-    if period == "today" || period == "t":
+    if period in ['t', 'today']:
         # print_ti("Today's log")
         today = date.today()
         start_cutoff = datetime(today.year, today.month, today.day) - LOCAL_UTC_DELTA
         end_cutoff = datetime(today.year, today.month, today.day) + timedelta(days=1) - LOCAL_UTC_DELTA
-    elif period == "yesterday" || period == "y":
+    elif period in ['y', 'yesterday']:
         # print_ti("Yesterday's log")
         today = date.today()
         start_cutoff = datetime(today.year, today.month, today.day) - timedelta(days=1) - LOCAL_UTC_DELTA
@@ -310,20 +313,21 @@ def action_log(period):
             secs -= hours_from_secs * 3600
 
         if hours != 0:
-            tmsg.append(str(hours) + ' hour' + ('s' if hours > 1 else ''))
+            tmsg.append(blue(str(hours).rjust(hour_space)) + ' hour' + ('s  ' if hours > 1 else '   '))
 
         if secs > 60:
             mins = int(secs / 60)
             secs -= mins * 60
-            tmsg.append(str(mins) + ' minute' + ('s' if mins > 1 else ''))
+            tmsg.append(blue(str(mins).rjust(minute_space)) + ' minute' + ('s' if mins > 1 else ' '))
 
         if secs:
-            tmsg.append(str(secs) + ' second' + ('s' if secs > 1 else ''))
+            tmsg.append(blue(str(secs).rjust(second_space)) + ' second' + ('s' if secs > 1 else ' '))
 
-        log[name]['tmsg'] = ', '.join(tmsg)[::-1].replace(',', ' &'[::-1], 1)[::-1]
+        log[name]['tmsg'] = ', '.join(tmsg)[::-1].replace(', ', ' &'[::-1], 1)[::-1]
 
     for name, item in sorted(list(log.items()), key=(lambda x: x[1]['delta']), reverse=True):
-        print_ti(name.ljust(name_col_len), ' ∙∙ ', item['tmsg'],
+	colored_name = name.replace('<i>',green('<i>'),1)
+        print_ti(colored_name.ljust(name_col_len), ' ∙∙ ', item['tmsg'],
                 end=' ← working\n' if current == name else '\n')
 
 
@@ -333,7 +337,12 @@ def action_edit():
         raise SystemExit(1)
 
     data = store.load()
-    yml = yaml.safe_dump(data, default_flow_style=False, allow_unicode=True)
+    try:
+        yml = yaml.safe_dump(data, default_flow_style=False, allow_unicode=True)
+	yml = yml.decode('utf-8')
+    except:
+        print_ti("Oops, that Decoding got an error!", file=sys.stderr)
+        raise SystemExit(1)
 
     cmd = os.getenv('EDITOR')
     fd, temp_path = tempfile.mkstemp(prefix='ti.')
@@ -349,10 +358,10 @@ def action_edit():
     os.remove(temp_path)
 
     try:
-      data = yaml.load(yml)
+        data = yaml.load(yml)
     except:
-      print_ti("Oops, that YAML didn't appear to be valid!", file=sys.stderr)
-      raise SystemExit(1)
+        print_ti("Oops, that YAML didn't appear to be valid!", file=sys.stderr)
+        raise SystemExit(1)
 
     store.dump(data)
 
