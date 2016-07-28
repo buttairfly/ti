@@ -263,12 +263,16 @@ def action_log(period):
     work = data['work'] + data['interrupt_stack']
     log = defaultdict(lambda: {'delta': timedelta()})
     current = None
+    num_days = 0
+    current_day = datetime(1970,1,1)
+
 
     if period in ['t', 'today']:
         # print_ti("Today's log")
         today = date.today()
         start_cutoff = datetime(today.year, today.month, today.day) - LOCAL_UTC_DELTA
         end_cutoff = datetime(today.year, today.month, today.day) + timedelta(days=1) - LOCAL_UTC_DELTA
+	
     elif period in ['y', 'yesterday']:
         # print_ti("Yesterday's log")
         today = date.today()
@@ -279,6 +283,19 @@ def action_log(period):
         end_cutoff = None
     for item in work:
         start_time = parse_isotime(item['start'])
+
+	if period in ['t', 'today']:
+	    current_day = today
+            num_days =1
+
+	elif period in ['y', 'yesterday']:
+            current_day = today - timedelta(days=1)
+            num_days =1
+	else:
+            if start_time.year != current_day.year or start_time.month != current_day.month or start_time.day != current_day.day:
+	        current_day = datetime(start_time.year, start_time.month, start_time.day)
+	        num_days +=1
+
         if 'end' in item:
             end_time = parse_isotime(item['end'])
         else: # The item currently being worked on
@@ -299,37 +316,36 @@ def action_log(period):
         log[item['name']]['delta'] += end_time - start_time
 
     name_col_len = 0
+    sc_work_time_sec = 0
 
     for name, item in log.items():
         name_col_len = max(name_col_len, len(name))
 
-        hours = item['delta'].days * 24
-        secs = item['delta'].seconds
-        tmsg = []
+    for name, item in log.items():
+	hours = item['delta'].days * 24
+        secs = item['delta'].seconds + hours*60*60
 
-        if secs > 3600:
-            hours_from_secs = int(secs / 3600)
-            hours += hours_from_secs
-            secs -= hours_from_secs * 3600
+	if name == 'sc':
+	    sc_work_time_sec = secs
 
-        if hours != 0:
-            tmsg.append(blue(str(hours).rjust(hour_space)) + ' hour' + ('s  ' if hours > 1 else '   '))
-
-        if secs > 60:
-            mins = int(secs / 60)
-            secs -= mins * 60
-            tmsg.append(blue(str(mins).rjust(minute_space)) + ' minute' + ('s' if mins > 1 else ' '))
-
-        if secs:
-            tmsg.append(blue(str(secs).rjust(second_space)) + ' second' + ('s' if secs > 1 else ' '))
-
-        log[name]['tmsg'] = ', '.join(tmsg)[::-1].replace(', ', ' &'[::-1], 1)[::-1]
-
-    for name, item in sorted(list(log.items()), key=(lambda x: x[1]['delta']), reverse=True):
 	colored_name = name.replace('<i>',green('<i>'),1)
-        print_ti(colored_name.ljust(name_col_len), ' ∙∙ ', item['tmsg'],
-                end=' ← working\n' if current == name else '\n')
+        print_ti(colored_name.ljust(name_col_len), format_time(secs), end=' ← working\n' if current == name else '\n')
+     
+    over_sec = sc_work_time_sec - num_days*8*60*60
+    if over_sec < 0:
+    	print_ti(red('WOver'.ljust(name_col_len)), format_time(over_sec))
+    else:
+	print_ti(green('WOver'.ljust(name_col_len)), format_time(over_sec))
 
+def format_time(secs):
+    separator = ' ∙∙ '
+    hours = int(secs / 3600)
+    secs -= hours * 3600
+    mins  = int(secs / 60)
+    secs -= mins * 60
+    return separator + blue(str(hours).rjust(hour_space)) + 'h ' + blue(str(mins).rjust(minute_space)) + 'm ' + blue(str(secs).rjust(second_space)) + 's '
+    
+    
 
 def action_edit():
     if 'EDITOR' not in os.environ:
