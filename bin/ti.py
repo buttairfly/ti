@@ -44,9 +44,9 @@ from colorama import *
 
 use_color = True
 use_gui_notification = False
-hour_space = 5
-minute_space = 2
-second_space = 2
+hour_space = 6
+minute_space = 3
+second_space = 3
 
 class JsonStore(object):
 
@@ -315,7 +315,7 @@ def action_log(period):
 
         log[item['name']]['delta'] += end_time - start_time
 
-    name_col_len = 0
+    name_col_len = 5
     sc_work_time_sec = 0
 
     for name, item in log.items():
@@ -339,13 +339,21 @@ def action_log(period):
 
 def format_time(secs):
     separator = ' ∙∙ '
+    negative = 0
+    if secs < 0:
+	secs *= -1
+        negative = 1
     hours = int(secs / 3600)
     secs -= hours * 3600
     mins  = int(secs / 60)
     secs -= mins * 60
-    return separator + blue(str(hours).rjust(hour_space)) + 'h ' + blue(str(mins).rjust(minute_space)) + 'm ' + blue(str(secs).rjust(second_space)) + 's '
-    
-    
+    if negative == 1:
+	hours *= -1
+        mins  *= -1
+        secs  *= -1
+	return separator + red(str(hours).rjust(hour_space)) + 'h ' + red(str(mins).rjust(minute_space)) + 'm ' + red(str(secs).rjust(second_space)) + 's '
+    else:
+	return separator + blue(str(hours).rjust(hour_space)) + 'h ' + blue(str(mins).rjust(minute_space)) + 'm ' + blue(str(secs).rjust(second_space)) + 's '
 
 def action_edit():
     if 'EDITOR' not in os.environ:
